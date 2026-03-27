@@ -34,7 +34,7 @@ jobs:
         
     - name: Test Docker Compose Production Architecture Build
       run: |
-        docker-compose build
+        docker compose build
         
     - name: Deploy Node Notification (Placeholder)
       run: |
