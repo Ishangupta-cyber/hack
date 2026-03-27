@@ -7,7 +7,7 @@ import os
 import pickle
 import logging
 import numpy as np
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt, get_jwt_identity
 from models import db, Application, DistrictStats, Complaint
 from extensions import cache
