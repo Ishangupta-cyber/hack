@@ -11,9 +11,12 @@ RUN apt-get update && apt-get install -y \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Pre-train the ML models during build by running train_model.py
+# Download NLTK Corpora for the Deep Learning Sentiment analyzer
+RUN python -m textblob.download_corpora
+
+# Pre-train the ML models during build
 COPY . .
-RUN python -c "from ml.train_model import train_models; train_models()" || echo "Model training skipped or failed, will attempt at runtime"
+RUN python -c "from ml.train_model import train_models; train_models()"
 
 EXPOSE 5000
 
