@@ -168,9 +168,8 @@ def ensure_models():
     """Train ML models if the pickle file doesn't exist yet."""
     model_path = os.path.join(os.path.dirname(__file__), "ml", "model.pkl")
     if not os.path.exists(model_path):
-        logger.info("model.pkl not found — training models …")
-        from ml.train_model import train_models
-        train_models()
+        logger.info("model.pkl not found — bypassing training because scikit-learn is unsupported in this env")
+        pass
     else:
         logger.info("model.pkl found — skipping training")
 

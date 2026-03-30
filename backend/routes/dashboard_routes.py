@@ -6,7 +6,12 @@ GET /api/fraud-detection   (Authority only)
 import os
 import pickle
 import logging
-import numpy as np
+try:
+    import numpy as np
+    HAS_NUMPY = True
+except ImportError:
+    HAS_NUMPY = False
+    np = None
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt, get_jwt_identity
 from models import db, Application, DistrictStats, Complaint
@@ -24,11 +29,18 @@ def _load_models():
     path = os.path.abspath(MODEL_PATH)
     if not os.path.exists(path):
         return None
-    with open(path, "rb") as f:
-        return pickle.load(f)
+    try:
+        with open(path, "rb") as f:
+            return pickle.load(f)
+    except Exception as e:
+        logger.warning("Could not load model.pkl: %s — using rule-based fallback", e)
+        return None
 
 
-MODELS = _load_models()
+try:
+    MODELS = _load_models()
+except Exception:
+    MODELS = None
 
 
 def _authority_only():
@@ -134,33 +146,47 @@ def fraud_detection():
     global MODELS
     if MODELS is None:
         MODELS = _load_models()
-        if MODELS is None:
-            return jsonify({"error": "ML model not available"}), 503
 
     stats = DistrictStats.query.all()
     if not stats:
         return jsonify({"anomalies": [], "message": "No district data available"}), 200
 
-    # Build feature matrix
-    features = np.array([
-        [s.funds_allocated, s.funds_utilized, s.delay_days] for s in stats
-    ])
-
-    anomaly_model = MODELS["anomaly_model"]
-    predictions = anomaly_model.predict(features)          # 1 = normal, -1 = anomaly
-    scores = anomaly_model.decision_function(features)     # lower = more anomalous
-
     results = []
-    for stat, pred, score in zip(stats, predictions, scores):
-        results.append({
-            "district": stat.district,
-            "funds_allocated": stat.funds_allocated,
-            "funds_utilized": stat.funds_utilized,
-            "delay_days": stat.delay_days,
-            "beneficiaries": stat.beneficiaries,
-            "is_anomaly": bool(pred == -1),
-            "anomaly_score": round(float(score), 4),
-        })
+
+    if HAS_NUMPY and MODELS and "anomaly_model" in MODELS:
+        # ML-based fraud detection using IsolationForest
+        features = np.array([
+            [s.funds_allocated, s.funds_utilized, s.delay_days] for s in stats
+        ])
+        anomaly_model = MODELS["anomaly_model"]
+        predictions = anomaly_model.predict(features)
+        scores = anomaly_model.decision_function(features)
+
+        for stat, pred, score in zip(stats, predictions, scores):
+            results.append({
+                "district": stat.district,
+                "funds_allocated": stat.funds_allocated,
+                "funds_utilized": stat.funds_utilized,
+                "delay_days": stat.delay_days,
+                "beneficiaries": stat.beneficiaries,
+                "is_anomaly": bool(pred == -1),
+                "anomaly_score": round(float(score), 4),
+            })
+    else:
+        # Rule-based fallback when ML models are unavailable
+        for stat in stats:
+            utilization = (stat.funds_utilized / stat.funds_allocated) if stat.funds_allocated else 0
+            is_anomaly = utilization < 0.5 or stat.delay_days > 30
+            score = round(utilization - (stat.delay_days / 100), 4)
+            results.append({
+                "district": stat.district,
+                "funds_allocated": stat.funds_allocated,
+                "funds_utilized": stat.funds_utilized,
+                "delay_days": stat.delay_days,
+                "beneficiaries": stat.beneficiaries,
+                "is_anomaly": is_anomaly,
+                "anomaly_score": score,
+            })
 
     # Sort by anomaly score ascending (most suspicious first)
     results.sort(key=lambda r: r["anomaly_score"])

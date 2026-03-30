@@ -1,12 +1,13 @@
 # Python Backend
 backend/venv/
-backend/__pycache__/
+__pycache__/
+*.pyc
 backend/database.db
 backend/instance/
 .env
 .pytest_cache/
 
 # Node Frontend
-pro-main/frontend/node_modules/
-pro-main/frontend/dist/
+node_modules/
+dist/
 .DS_Store

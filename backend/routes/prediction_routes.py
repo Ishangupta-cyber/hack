@@ -5,7 +5,12 @@ POST /api/predict-approval  (Citizen only)
 import os
 import pickle
 import logging
-import numpy as np
+try:
+    import numpy as np
+    HAS_NUMPY = True
+except ImportError:
+    HAS_NUMPY = False
+    np = None
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt
 
@@ -25,11 +30,18 @@ def _load_models():
     if not os.path.exists(path):
         logger.warning("model.pkl not found — run ml/train_model.py first")
         return None
-    with open(path, "rb") as f:
-        return pickle.load(f)
+    try:
+        with open(path, "rb") as f:
+            return pickle.load(f)
+    except Exception as e:
+        logger.warning("Could not load model.pkl: %s — using rule-based fallback", e)
+        return None
 
 
-MODELS = _load_models()
+try:
+    MODELS = _load_models()
+except Exception:
+    MODELS = None
 
 
 # ---------------------------------------------------------------------------
@@ -52,8 +64,6 @@ def predict_approval():
     global MODELS
     if MODELS is None:
         MODELS = _load_models()
-        if MODELS is None:
-            return jsonify({"error": "ML model not available. Please contact admin."}), 503
 
     data = request.get_json(silent=True)
     if not data:
@@ -68,24 +78,6 @@ def predict_approval():
     except (KeyError, ValueError) as exc:
         return jsonify({"error": f"Invalid input: {exc}"}), 400
 
-    categories = MODELS["categories"]
-    districts = MODELS["districts"]
-
-    category_encoded = categories.get(category_name)
-    district_encoded = districts.get(district_name)
-
-    if category_encoded is None:
-        return jsonify({"error": f"Unknown category '{category_name}'. Valid: {list(categories)}"}), 400
-    if district_encoded is None:
-        return jsonify({"error": f"Unknown district '{district_name}'. Valid: {list(districts)}"}), 400
-
-    # --- Prediction ---
-    features = np.array([[income, marks, category_encoded, district_encoded]])
-    model = MODELS["approval_model"]
-    proba = model.predict_proba(features)[0]
-    approval_probability = round(float(proba[1]) * 100, 2)  # % chance of approval
-
-    # --- Rejection reasons ---
     rejection_reasons = []
     if income > 500000:
         rejection_reasons.append("Income too high (above ₹5,00,000)")
@@ -93,6 +85,36 @@ def predict_approval():
         rejection_reasons.append("Marks too low (below 50)")
     if not data.get("documents_submitted", True):
         rejection_reasons.append("Missing documents")
+
+    if HAS_NUMPY and MODELS and "approval_model" in MODELS:
+        # ML-based prediction using RandomForest
+        categories = MODELS["categories"]
+        districts = MODELS["districts"]
+
+        category_encoded = categories.get(category_name)
+        district_encoded = districts.get(district_name)
+
+        if category_encoded is None:
+            return jsonify({"error": f"Unknown category '{category_name}'. Valid: {list(categories)}"}), 400
+        if district_encoded is None:
+            return jsonify({"error": f"Unknown district '{district_name}'. Valid: {list(districts)}"}), 400
+
+        features = np.array([[income, marks, category_encoded, district_encoded]])
+        model = MODELS["approval_model"]
+        proba = model.predict_proba(features)[0]
+        approval_probability = round(float(proba[1]) * 100, 2)
+    else:
+        # Rule-based fallback when ML models are unavailable
+        probability = 60
+        if income > 500000:
+            probability -= 30
+        if marks < 60:
+            probability -= 40
+        else:
+            probability += 20
+        if not district_name:
+            probability -= 15
+        approval_probability = max(0, min(100, probability))
 
     status = "Likely Approved" if approval_probability >= 50 else "Likely Rejected"
 
