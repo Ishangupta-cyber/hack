@@ -7,6 +7,7 @@ import Insights from './pages/Insights';
 import Complaints from './pages/Complaints';
 import Eligibility from './pages/Eligibility';
 import Simulation from './pages/Simulation';
+import CitizenVoices from './pages/CitizenVoices';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 
@@ -14,6 +15,11 @@ const ProtectedRoute = ({ children }) => {
   const token = localStorage.getItem('token');
   if (!token) return <Navigate to="/login" replace />;
   return children;
+};
+
+const RoleRedirect = () => {
+  const role = localStorage.getItem('role');
+  return <Navigate to={role === 'Authority' ? '/dashboard' : '/eligibility'} replace />;
 };
 
 function App() {
@@ -28,13 +34,14 @@ function App() {
               <Layout />
             </ProtectedRoute>
           }>
-            <Route index element={<Navigate to="/dashboard" replace />} />
+            <Route index element={<RoleRedirect />} />
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="heatmap" element={<Heatmap />} />
             <Route path="insights" element={<Insights />} />
             <Route path="complaints" element={<Complaints />} />
             <Route path="eligibility" element={<Eligibility />} />
             <Route path="simulation" element={<Simulation />} />
+            <Route path="voices" element={<CitizenVoices />} />
           </Route>
         </Routes>
       </BrowserRouter>

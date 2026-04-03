@@ -79,11 +79,13 @@ def create_app():
     from routes.prediction_routes import prediction_bp
     from routes.dashboard_routes import dashboard_bp
     from routes.legacy_routes import legacy_bp
+    from routes.post_routes import posts_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(prediction_bp)
     app.register_blueprint(dashboard_bp)
     app.register_blueprint(legacy_bp)
+    app.register_blueprint(posts_bp)
 
     # -- Health check --
     @app.route("/api/health", methods=["GET"])

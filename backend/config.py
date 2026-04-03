@@ -3,8 +3,10 @@ PolicyLens AI — Application Configuration
 """
 import os
 from datetime import timedelta
+from dotenv import load_dotenv
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+load_dotenv(os.path.join(BASE_DIR, '.env'))
 
 
 class Config:
@@ -13,10 +15,12 @@ class Config:
     # --- Flask ---
     SECRET_KEY = os.environ.get("SECRET_KEY", "policylens-secret-key-change-in-prod")
 
-    # --- Database (SQLite or Postgres) ---
+    # --- Database (Cloud Postgres via pg8000) ---
     SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URL") or f"sqlite:///{os.path.join(BASE_DIR, 'database.db')}"
     if SQLALCHEMY_DATABASE_URI and SQLALCHEMY_DATABASE_URI.startswith("postgres://"):
         SQLALCHEMY_DATABASE_URI = SQLALCHEMY_DATABASE_URI.replace("postgres://", "postgresql://", 1)
+    if SQLALCHEMY_DATABASE_URI and SQLALCHEMY_DATABASE_URI.startswith("postgresql://"):
+        SQLALCHEMY_DATABASE_URI = SQLALCHEMY_DATABASE_URI.replace("postgresql://", "postgresql+pg8000://", 1)
     
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
