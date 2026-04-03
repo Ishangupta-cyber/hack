@@ -45,7 +45,7 @@ export default function Layout() {
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('role');
-    navigate('/login');
+    navigate('/');
   };
 
   return (
@@ -69,12 +69,12 @@ export default function Layout() {
       }`}>
         {/* Logo */}
         <div className="p-6 border-b border-surface-200/50 dark:border-surface-700/50">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center shadow-glow">
+          <div className="flex items-center gap-3 cursor-pointer group" onClick={() => navigate(mode === 'admin' ? '/dashboard' : '/eligibility')}>
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center shadow-glow group-hover:shadow-lg group-hover:scale-105 transition-all duration-200">
               <Shield className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h1 className="text-lg font-bold gradient-text">PolicyLens AI</h1>
+              <h1 className="text-lg font-bold gradient-text group-hover:opacity-80 transition-opacity">PolicyLens AI</h1>
               <p className="text-[11px] text-surface-400 dark:text-surface-500 font-medium uppercase tracking-wider">Governance Intelligence</p>
             </div>
           </div>
@@ -227,7 +227,11 @@ export default function Layout() {
 
             {/* Avatar & Logout */}
             <div className="flex items-center gap-2 ml-1">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center text-white text-sm font-bold shadow-sm">
+              <div
+                onClick={() => navigate('/profile')}
+                className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center text-white text-sm font-bold shadow-sm cursor-pointer hover:shadow-lg hover:scale-105 transition-all duration-200"
+                title="View Profile"
+              >
                 {mode === 'admin' ? 'A' : 'C'}
               </div>
               <button

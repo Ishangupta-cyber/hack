@@ -212,6 +212,10 @@ def handle_complaints():
     user_id = int(get_jwt_identity())
 
     if request.method == "POST":
+        # Only Citizens can submit complaints
+        if claims.get("role") != "Citizen":
+            return jsonify({"error": "Only citizens can file complaints"}), 403
+
         # Citizen submitting a complaint
         data = request.get_json(silent=True)
         text = data.get("text", "").strip()

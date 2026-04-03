@@ -18,6 +18,14 @@ class User(db.Model):
     role = db.Column(db.String(20), nullable=False, default="Citizen")  # Citizen | Authority
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+    # Profile fields
+    phone = db.Column(db.String(15), nullable=True)
+    address = db.Column(db.String(256), nullable=True)
+    city = db.Column(db.String(100), nullable=True)
+    state = db.Column(db.String(100), nullable=True, default="Uttar Pradesh")
+    aadhaar_last4 = db.Column(db.String(4), nullable=True)
+    bio = db.Column(db.Text, nullable=True)
+
     # Relationship
     applications = db.relationship("Application", backref="user", lazy=True)
 
