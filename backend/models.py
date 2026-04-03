@@ -78,3 +78,39 @@ class Complaint(db.Model):
 
     def __repr__(self):
         return f"<Complaint {self.id} — Urgency: {self.urgency}>"
+
+
+class Post(db.Model):
+    """Citizen Voices — public scheme discussions (Twitter-like)."""
+    __tablename__ = "posts"
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    scheme_name = db.Column(db.String(150), nullable=False)
+    content = db.Column(db.String(280), nullable=False)
+    likes_count = db.Column(db.Integer, nullable=False, default=0)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relationships
+    author = db.relationship("User", backref="posts", lazy=True)
+    likes = db.relationship("PostLike", backref="post", lazy=True, cascade="all, delete-orphan")
+
+    def __repr__(self):
+        return f"<Post {self.id} by User {self.user_id}>"
+
+
+class PostLike(db.Model):
+    """Tracks which user liked which post (prevents double-liking)."""
+    __tablename__ = "post_likes"
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    post_id = db.Column(db.Integer, db.ForeignKey("posts.id"), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Unique constraint: one like per user per post
+    __table_args__ = (db.UniqueConstraint("post_id", "user_id", name="uq_post_user_like"),)
+
+    def __repr__(self):
+        return f"<PostLike post={self.post_id} user={self.user_id}>"
+

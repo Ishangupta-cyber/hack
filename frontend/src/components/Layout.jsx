@@ -19,6 +19,7 @@ const adminLinks = [
 
 const citizenLinks = [
   { to: '/eligibility', label: 'Check Eligibility', icon: ShieldCheck },
+  { to: '/voices', label: 'Citizen Voices', icon: Users },
   { to: '/complaints', label: 'File Complaint', icon: MessageSquareWarning },
 ];
 
