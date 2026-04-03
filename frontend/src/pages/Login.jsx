@@ -53,6 +53,7 @@ export default function Login() {
 
         localStorage.setItem('token', data.access_token);
         localStorage.setItem('role', data.user.role);
+        localStorage.setItem('userName', data.user.name);
         navigate('/dashboard');
       } else if (data.code === 'USER_NOT_FOUND') {
         navigate(`/signup/${portalType}`, { state: { email } });

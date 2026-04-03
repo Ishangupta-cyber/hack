@@ -1,32 +1,33 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import {
-  User as UserIcon, Mail, Phone, MapPin, Building2, Shield,
-  Pencil, Save, X, Loader2, Calendar, FileText, Fingerprint
-} from 'lucide-react';
-import { fetchAPI, API_BASE } from '../lib/utils';
+import { User, Phone, MapPin, Building, Map, CreditCard, Mail, Shield, Save, Edit2, Loader2, Info } from 'lucide-react';
+import { API_BASE } from '../lib/utils';
+import { useTranslation } from 'react-i18next';
 
 export default function Profile() {
+  const { t } = useTranslation();
   const [profile, setProfile] = useState(null);
-  const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState({});
+  const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState(null);
+  const [formData, setFormData] = useState({});
 
   useEffect(() => {
-    loadProfile();
+    fetchProfile();
   }, []);
 
-  const loadProfile = async () => {
+  const fetchProfile = async () => {
     try {
+      const token = localStorage.getItem('token');
       const res = await fetch(`${API_BASE}/api/profile`, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
       });
       const data = await res.json();
       if (res.ok) {
         setProfile(data);
-        setForm(data);
+        setFormData(data);
       }
     } catch (err) {
       console.error('Failed to load profile', err);
@@ -37,259 +38,168 @@ export default function Profile() {
 
   const handleSave = async () => {
     setSaving(true);
-    setMessage(null);
     try {
+      const token = localStorage.getItem('token');
       const res = await fetch(`${API_BASE}/api/profile`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({
-          name: form.name,
-          phone: form.phone,
-          address: form.address,
-          city: form.city,
-          state: form.state,
-          aadhaar_last4: form.aadhaar_last4,
-          bio: form.bio,
-        })
+        body: JSON.stringify(formData)
       });
-      const data = await res.json();
       if (res.ok) {
-        setProfile({ ...profile, ...data.user });
-        setForm({ ...form, ...data.user });
-        setEditing(false);
-        setMessage({ type: 'success', text: 'Profile updated successfully!' });
-      } else {
-        setMessage({ type: 'error', text: data.error || 'Failed to update' });
+        setProfile(formData);
+        setIsEditing(false);
       }
     } catch (err) {
-      setMessage({ type: 'error', text: 'Connection error' });
+      console.error('Failed to save profile', err);
     } finally {
       setSaving(false);
     }
   };
 
-  const handleCancel = () => {
-    setForm(profile);
-    setEditing(false);
-    setMessage(null);
-  };
-
-  const handleChange = (field, value) => {
-    setForm(prev => ({ ...prev, [field]: value }));
-  };
-
   if (loading) {
     return (
-      <div className="page-container flex items-center justify-center min-h-[60vh]">
+      <div className="flex items-center justify-center p-12">
         <Loader2 className="w-8 h-8 animate-spin text-primary-500" />
       </div>
     );
   }
 
-  const isAdmin = profile?.role === 'Authority';
+  if (!profile) return null;
 
   return (
-    <div className="page-container">
-      <div className="mb-8">
-        <h1 className="page-title">My Profile</h1>
-        <p className="page-subtitle">View and manage your personal information.</p>
+    <div className="page-container mx-auto">
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="page-title flex items-center gap-2">
+            <User className="w-7 h-7 text-primary-500" />
+            My Profile
+          </h1>
+          <p className="page-subtitle">Manage your personal information and preferences.</p>
+        </div>
+        {!isEditing ? (
+          <button onClick={() => setIsEditing(true)} className="btn-secondary flex items-center gap-2">
+            <Edit2 className="w-4 h-4" /> Edit Profile
+          </button>
+        ) : (
+          <div className="flex gap-3">
+            <button onClick={() => { setIsEditing(false); setFormData(profile); }} className="btn-secondary">
+              Cancel
+            </button>
+            <button onClick={handleSave} disabled={saving} className="btn-primary flex items-center gap-2">
+              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+              Save Changes
+            </button>
+          </div>
+        )}
       </div>
 
-      <div className="max-w-3xl mx-auto space-y-6">
-        {/* Message Banner */}
-        {message && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className={`p-4 rounded-xl border text-sm font-medium ${
-              message.type === 'success'
-                ? 'bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-900/20 dark:border-emerald-800 dark:text-emerald-300'
-                : 'bg-red-50 border-red-200 text-red-700 dark:bg-red-900/20 dark:border-red-800 dark:text-red-300'
-            }`}
-          >
-            {message.text}
-          </motion.div>
-        )}
-
-        {/* Profile Header Card */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-card p-6 md:p-8 relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-primary-500 to-accent-500" />
-
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5">
-            {/* Avatar */}
-            <div className={`w-20 h-20 rounded-2xl bg-gradient-to-br ${isAdmin ? 'from-teal-500 to-emerald-500' : 'from-indigo-500 to-blue-500'} flex items-center justify-center text-white text-2xl font-bold shadow-lg`}>
-              {profile?.name?.charAt(0)?.toUpperCase() || '?'}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Avatar Sidebar */}
+        <div className="md:col-span-1">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-card p-6 text-center">
+            <div className="w-24 h-24 mx-auto rounded-full bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center text-white text-3xl font-bold mb-4 shadow-xl">
+              {formData.name?.charAt(0).toUpperCase()}
             </div>
-
-            <div className="flex-1">
-              <h2 className="text-xl font-bold text-surface-900 dark:text-surface-100">{profile?.name}</h2>
-              <p className="text-sm text-surface-500 font-medium">{profile?.email}</p>
-              <div className="flex items-center gap-2 mt-2">
-                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border ${
-                  isAdmin
-                    ? 'bg-teal-50 text-teal-700 border-teal-200 dark:bg-teal-900/20 dark:text-teal-400 dark:border-teal-800'
-                    : 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-900/20 dark:text-indigo-400 dark:border-indigo-800'
-                }`}>
-                  <Shield className="w-3 h-3" />
-                  {profile?.role}
-                </span>
-                <span className="text-xs text-surface-400">
-                  <Calendar className="w-3 h-3 inline mr-1" />
-                  Joined {new Date(profile?.created_at).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}
-                </span>
-              </div>
-            </div>
-
-            {/* Edit / Save / Cancel buttons */}
-            <div className="flex gap-2 self-start">
-              {editing ? (
-                <>
-                  <button onClick={handleCancel} className="flex items-center gap-1.5 px-4 py-2 rounded-xl border border-surface-200 dark:border-surface-700 text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800 text-sm font-medium transition-all">
-                    <X className="w-4 h-4" /> Cancel
-                  </button>
-                  <button onClick={handleSave} disabled={saving} className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-primary-600 to-accent-600 hover:from-primary-500 hover:to-accent-500 text-white text-sm font-bold shadow-lg shadow-primary-500/30 transition-all disabled:opacity-50">
-                    {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                    Save
-                  </button>
-                </>
-              ) : (
-                <button onClick={() => setEditing(true)} className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-primary-600 to-accent-600 hover:from-primary-500 hover:to-accent-500 text-white text-sm font-bold shadow-lg shadow-primary-500/30 transition-all">
-                  <Pencil className="w-4 h-4" /> Edit Profile
-                </button>
-              )}
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Details Card */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="glass-card p-6 md:p-8">
-          <h3 className="text-sm font-semibold text-surface-500 uppercase tracking-wider mb-6">Personal Information</h3>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Full Name */}
-            <ProfileField
-              icon={UserIcon}
-              label="Full Name"
-              value={form.name}
-              editing={editing}
-              onChange={(v) => handleChange('name', v)}
-            />
-
-            {/* Email (read-only always) */}
-            <ProfileField
-              icon={Mail}
-              label="Email Address"
-              value={form.email}
-              editing={false}
-              readOnly
-            />
-
-            {/* Phone */}
-            <ProfileField
-              icon={Phone}
-              label="Phone Number"
-              value={form.phone}
-              editing={editing}
-              placeholder="+91 9876543210"
-              onChange={(v) => handleChange('phone', v)}
-            />
-
-            {/* City */}
-            <ProfileField
-              icon={Building2}
-              label="City"
-              value={form.city}
-              editing={editing}
-              placeholder="e.g. Lucknow"
-              onChange={(v) => handleChange('city', v)}
-            />
-
-            {/* State */}
-            <ProfileField
-              icon={MapPin}
-              label="State"
-              value={form.state}
-              editing={editing}
-              placeholder="e.g. Uttar Pradesh"
-              onChange={(v) => handleChange('state', v)}
-            />
-
-            {/* Aadhaar Last 4 */}
-            <ProfileField
-              icon={Fingerprint}
-              label="Aadhaar (Last 4 digits)"
-              value={form.aadhaar_last4}
-              editing={editing}
-              placeholder="e.g. 1234"
-              maxLength={4}
-              onChange={(v) => handleChange('aadhaar_last4', v)}
-            />
-          </div>
-
-          {/* Address — full width */}
-          <div className="mt-6">
-            <ProfileField
-              icon={MapPin}
-              label="Full Address"
-              value={form.address}
-              editing={editing}
-              placeholder="e.g. 42, Civil Lines, Lucknow"
-              onChange={(v) => handleChange('address', v)}
-              fullWidth
-            />
-          </div>
-
-          {/* Bio — full width */}
-          <div className="mt-6">
-            <label className="flex items-center gap-2 text-xs font-semibold text-surface-500 uppercase tracking-wider mb-2">
-              <FileText className="w-4 h-4" /> Bio
-            </label>
-            {editing ? (
-              <textarea
-                rows={3}
-                value={form.bio || ''}
-                onChange={(e) => handleChange('bio', e.target.value)}
-                placeholder="A short bio about yourself..."
-                className="w-full px-4 py-3 rounded-xl bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 focus:ring-2 focus:ring-primary-500/50 focus:border-transparent transition-all outline-none resize-none text-sm"
+            {isEditing ? (
+              <input 
+                className="input-field text-center font-bold text-lg mb-2" 
+                value={formData.name} 
+                onChange={e => setFormData({...formData, name: e.target.value})} 
               />
             ) : (
-              <p className="text-sm text-surface-700 dark:text-surface-300 pl-6">
-                {form.bio || <span className="text-surface-400 italic">Not provided</span>}
-              </p>
+              <h2 className="text-xl font-bold dark:text-white">{profile.name}</h2>
             )}
-          </div>
-        </motion.div>
+            
+            <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary-50 dark:bg-primary-900/40 text-primary-600 dark:text-primary-400 text-xs font-semibold">
+              <Shield className="w-3.5 h-3.5" />
+              {profile.role} User
+            </div>
+            
+            <p className="text-xs text-surface-400 mt-4 flex items-center justify-center gap-1">
+              <Info className="w-3 h-3" /> Member since {new Date(profile.created_at).getFullYear()}
+            </p>
+          </motion.div>
+        </div>
+
+        {/* Details Form */}
+        <div className="md:col-span-2">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="glass-card p-6 space-y-6">
+            <h3 className="text-lg font-semibold border-b border-surface-200 dark:border-surface-700 pb-2">Personal Details</h3>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <div>
+                <label className="flex items-center gap-1.5 text-sm font-medium text-surface-500 mb-1">
+                  <Mail className="w-4 h-4 text-surface-400" /> Email Address (Read-only)
+                </label>
+                <input type="email" value={profile.email} disabled className="input-field opacity-60 cursor-not-allowed" />
+              </div>
+              
+              <div>
+                <label className="flex items-center gap-1.5 text-sm font-medium text-surface-500 mb-1">
+                  <Phone className="w-4 h-4 text-surface-400" /> Phone Number
+                </label>
+                {isEditing ? (
+                  <input type="text" value={formData.phone || ''} onChange={e => setFormData({...formData, phone: e.target.value})} className="input-field text-surface-900 dark:text-white" placeholder="+91 XXXXX XXXXX" />
+                ) : (
+                  <div className="px-3 py-2 text-surface-900 dark:text-white font-medium">{profile.phone || 'Not provided'}</div>
+                )}
+              </div>
+
+              <div>
+                <label className="flex items-center gap-1.5 text-sm font-medium text-surface-500 mb-1">
+                  <CreditCard className="w-4 h-4 text-surface-400" /> Aadhaar (Last 4 digits)
+                </label>
+                {isEditing ? (
+                  <input type="text" maxLength={4} value={formData.aadhaar_last4 || ''} onChange={e => setFormData({...formData, aadhaar_last4: e.target.value})} className="input-field text-surface-900 dark:text-white" placeholder="XXXX" />
+                ) : (
+                  <div className="px-3 py-2 text-surface-900 dark:text-white font-medium">{profile.aadhaar_last4 ? `XXXX XXXX ${profile.aadhaar_last4}` : 'Not provided'}</div>
+                )}
+              </div>
+              
+              <div className="sm:col-span-2">
+                <label className="flex items-center gap-1.5 text-sm font-medium text-surface-500 mb-1">
+                  <MapPin className="w-4 h-4 text-surface-400" /> Street Address
+                </label>
+                {isEditing ? (
+                  <input type="text" value={formData.address || ''} onChange={e => setFormData({...formData, address: e.target.value})} className="input-field text-surface-900 dark:text-white" placeholder="Enter complete address" />
+                ) : (
+                  <div className="px-3 py-2 text-surface-900 dark:text-white font-medium">{profile.address || 'Not provided'}</div>
+                )}
+              </div>
+
+              <div>
+                <label className="flex items-center gap-1.5 text-sm font-medium text-surface-500 mb-1">
+                  <Building className="w-4 h-4 text-surface-400" /> City / District
+                </label>
+                {isEditing ? (
+                  <input type="text" value={formData.city || ''} onChange={e => setFormData({...formData, city: e.target.value})} className="input-field text-surface-900 dark:text-white" placeholder="E.g. Lucknow" />
+                ) : (
+                  <div className="px-3 py-2 text-surface-900 dark:text-white font-medium">{profile.city || 'Not provided'}</div>
+                )}
+              </div>
+
+               <div>
+                <label className="flex items-center gap-1.5 text-sm font-medium text-surface-500 mb-1">
+                  <Map className="w-4 h-4 text-surface-400" /> State
+                </label>
+                {isEditing ? (
+                  <select value={formData.state || ''} onChange={e => setFormData({...formData, state: e.target.value})} className="input-field text-surface-900 dark:text-white">
+                    <option value="Uttar Pradesh">Uttar Pradesh</option>
+                    <option value="Delhi">Delhi</option>
+                    <option value="Maharashtra">Maharashtra</option>
+                    <option value="Karnataka">Karnataka</option>
+                  </select>
+                ) : (
+                  <div className="px-3 py-2 text-surface-900 dark:text-white font-medium">{profile.state || 'Uttar Pradesh'}</div>
+                )}
+              </div>
+            </div>
+          </motion.div>
+        </div>
       </div>
-    </div>
-  );
-}
-
-
-// ---- Reusable field component ----
-function ProfileField({ icon: Icon, label, value, editing, onChange, placeholder, readOnly, maxLength, fullWidth }) {
-  return (
-    <div className={fullWidth ? 'col-span-full' : ''}>
-      <label className="flex items-center gap-2 text-xs font-semibold text-surface-500 uppercase tracking-wider mb-2">
-        <Icon className="w-4 h-4" /> {label}
-      </label>
-      {editing && !readOnly ? (
-        <input
-          type="text"
-          value={value || ''}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder || ''}
-          maxLength={maxLength}
-          className="w-full px-4 py-2.5 rounded-xl bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 focus:ring-2 focus:ring-primary-500/50 focus:border-transparent transition-all outline-none text-sm font-medium"
-        />
-      ) : (
-        <p className="text-sm text-surface-700 dark:text-surface-300 pl-6 py-1">
-          {value || <span className="text-surface-400 italic">Not provided</span>}
-          {readOnly && <span className="ml-2 text-xs text-surface-400">(cannot be changed)</span>}
-        </p>
-      )}
     </div>
   );
 }

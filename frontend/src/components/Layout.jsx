@@ -92,8 +92,8 @@ export default function Layout() {
         </div>
 
         {/* Nav links */}
-        <nav className="flex-1 overflow-y-auto p-4 space-y-1">
-          <p className="text-[11px] font-semibold text-surface-400 dark:text-surface-500 uppercase tracking-wider mb-3 px-3">
+        <nav className="flex-1 w-full overflow-y-auto py-4">
+          <p className="text-[11px] font-semibold text-surface-400 dark:text-surface-500 uppercase tracking-wider mb-2 px-6">
             {mode === 'admin' ? 'Administration' : 'Citizen Services'}
           </p>
           {links.map(link => (
@@ -102,10 +102,10 @@ export default function Layout() {
               to={link.to}
               onClick={() => setSidebarOpen(false)}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group ${
+                `w-full flex items-center gap-3 px-6 py-3 text-sm font-medium transition-all duration-200 group border-l-4 ${
                   isActive
-                    ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 shadow-sm'
-                    : 'text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800 hover:text-surface-900 dark:hover:text-surface-200'
+                    ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 shadow-sm'
+                    : 'border-transparent text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800 hover:text-surface-900 dark:hover:text-surface-200'
                 }`
               }
             >
@@ -233,7 +233,7 @@ export default function Layout() {
                 className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center text-white text-sm font-bold shadow-sm cursor-pointer hover:shadow-lg hover:scale-105 transition-all duration-200"
                 title="View Profile"
               >
-                {mode === 'admin' ? 'A' : 'C'}
+                {localStorage.getItem('userName') ? localStorage.getItem('userName').charAt(0).toUpperCase() : (mode === 'admin' ? 'A' : 'C')}
               </div>
               <button
                 onClick={handleLogout}

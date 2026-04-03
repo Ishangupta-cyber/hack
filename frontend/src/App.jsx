@@ -8,6 +8,8 @@ import Complaints from './pages/Complaints';
 import Eligibility from './pages/Eligibility';
 import Simulation from './pages/Simulation';
 import CitizenVoices from './pages/CitizenVoices';
+import Profile from './pages/Profile';
+import LandingPage from './pages/LandingPage';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 
@@ -27,21 +29,23 @@ function App() {
     <ThemeProvider>
       <BrowserRouter>
         <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
-          <Route path="/" element={
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/login/:portalType" element={<Login />} />
+          <Route path="/signup/:portalType" element={<Signup />} />
+          
+          <Route element={
             <ProtectedRoute>
               <Layout />
             </ProtectedRoute>
           }>
-            <Route index element={<RoleRedirect />} />
-            <Route path="dashboard" element={<Dashboard />} />
-            <Route path="heatmap" element={<Heatmap />} />
-            <Route path="insights" element={<Insights />} />
-            <Route path="complaints" element={<Complaints />} />
-            <Route path="eligibility" element={<Eligibility />} />
-            <Route path="simulation" element={<Simulation />} />
-            <Route path="voices" element={<CitizenVoices />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/heatmap" element={<Heatmap />} />
+            <Route path="/insights" element={<Insights />} />
+            <Route path="/complaints" element={<Complaints />} />
+            <Route path="/eligibility" element={<Eligibility />} />
+            <Route path="/simulation" element={<Simulation />} />
+            <Route path="/voices" element={<CitizenVoices />} />
+            <Route path="/profile" element={<Profile />} />
           </Route>
         </Routes>
       </BrowserRouter>

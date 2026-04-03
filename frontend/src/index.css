@@ -126,8 +126,7 @@ body {
   }
 
   .page-container {
-    @apply p-4 md:p-6 lg:p-8 mx-auto;
-    max-width: 1600px;
+    @apply p-4 md:p-6 lg:p-8 w-full;
   }
 
   .page-title {
