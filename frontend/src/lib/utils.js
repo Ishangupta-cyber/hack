@@ -17,6 +17,14 @@ export async function fetchAPI(endpoint, options = {}) {
     ...options,
     headers: { ...headers, ...(options.headers || {}) },
   });
+
+  // Auto-logout if token expired
+  if (res.status === 401) {
+    localStorage.clear();
+    window.location.href = '/';
+    return {};
+  }
+
   return res.json();
 }
 

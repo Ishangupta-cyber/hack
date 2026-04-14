@@ -26,7 +26,7 @@ class Config:
 
     # --- JWT ---
     JWT_SECRET_KEY = os.environ.get("JWT_SECRET_KEY", "jwt-super-secret-change-in-prod")
-    JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=1)
+    JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=24)
     JWT_BLACKLIST_ENABLED = True
     JWT_BLACKLIST_TOKEN_CHECKS = ["access"]
 
